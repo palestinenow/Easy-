@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Template Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .box {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+        h1 { color: #333; margin-bottom: 30px; }
+        .drop {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        .drop:hover, .drop.active { background: #f0f4ff; border-color: #764ba2; }
+        .drop.done { border-style: solid; background: #e8f5e9; border-color: #4caf50; }
+        input { display: none; }
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover { transform: scale(1.05); }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .progress { margin: 20px 0; display: none; }
+        .bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 15px; overflow: hidden; }
+        .fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: 0.3s; }
+        .text { margin-top: 10px; font-weight: bold; }
+        .info { color: #666; margin-top: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>🖼️ Add Template to All Images</h1>
+        
+        <div class="drop" id="templateDrop" onclick="document.getElementById('templateInput').click()">
+            <input type="file" id="templateInput" accept="image/png" onchange="loadTemplate(this)">
+            <p style="font-size: 40px;">📋</p>
+            <p><b>Step 1:</b> Upload template.png</p>
+            <p id="templateStatus" style="color: #667eea;"></p>
+        </div>
+
+        <div class="drop" id="imagesDrop" onclick="document.getElementById('imagesInput').click()">
+            <input type="file" id="imagesInput" accept="image/*" multiple onchange="loadImages(this)">
+            <p style="font-size: 40px;">📁</p>
+            <p><b>Step 2:</b> Select all your images (0-60+)</p>
+            <p id="imagesStatus" style="color: #667eea;"></p>
+        </div>
+
+        <button class="btn" id="goBtn" onclick="process()" disabled>🚀 START</button>
+
+        <div class="progress" id="progress">
+            <div class="bar"><div class="fill" id="fill"></div></div>
+            <div class="text" id="progressText">0/0</div>
+        </div>
+
+        <div id="downloadArea" style="display:none;">
+            <button class="btn" onclick="downloadAll()">📥 Download All</button>
+            <button class="btn" onclick="downloadZip()">📦 Download ZIP</button>
+        </div>
+
+        <p class="info">✅ Works offline • ✅ Private (images stay on your computer) • ✅ No upload limits</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script>
+        let template = null, images = [], results = [];
+
+        function loadTemplate(input) {
+            const file = input.files[0];
+            if (file && file.type === 'image/png') {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    template = new Image();
+                    template.onload = () => {
+                        document.getElementById('templateDrop').classList.add('done');
+                        document.getElementById('templateStatus').textContent = '✓ ' + file.name;
+                        check();
+                    };
+                    template.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function loadImages(input) {
+            images = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+            if (images.length > 0) {
+                document.getElementById('imagesDrop').classList.add('done');
+                document.getElementById('imagesStatus').textContent = '✓ ' + images.length + ' images';
+                check();
+            }
+        }
+
+        function check() {
+            document.getElementById('goBtn').disabled = !(template && images.length > 0);
+        }
+
+        async function process() {
+            document.getElementById('progress').style.display = 'block';
+            document.getElementById('downloadArea').style.display = 'none';
+            results = [];
+
+            for (let i = 0; i < images.length; i++) {
+                const processed = await applyTemplate(images[i]);
+                results.push(processed);
+
+                const pct = Math.round(((i + 1) / images.length) * 100);
+                document.getElementById('fill').style.width = pct + '%';
+                document.getElementById('progressText').textContent = (i + 1) + '/' + images.length;
+                await new Promise(r => setTimeout(r, 30));
+            }
+
+            document.getElementById('progressText').textContent = '✅ Done!';
+            document.getElementById('downloadArea').style.display = 'block';
+        }
+
+        function applyTemplate(file) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        const scale = Math.min(canvas.width / template.width, canvas.height / template.height);
+                        const tw = template.width * scale;
+                        const th = template.height * scale;
+                        const x = (canvas.width - tw) / 2;
+                        const y = (canvas.height - th) / 2;
+                        ctx.drawImage(template, x, y, tw, th);
+
+                        canvas.toBlob(blob => {
+                            const newFile = new File([blob], 'result_' + file.name.replace(/\.[^/.]+$/, '') + '.png', {type: 'image/png'});
+                            resolve({file: newFile, url: URL.createObjectURL(blob)});
+                        }, 'image/png');
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function downloadAll() {
+            results.forEach((r, i) => setTimeout(() => saveAs(r.file, r.file.name), i * 200));
+        }
+
+        async function downloadZip() {
+            const zip = new JSZip();
+            results.forEach(r => zip.file(r.file.name, r.file));
+            const content = await zip.generateAsync({type: 'blob'});
+            saveAs(content, 'all_images.zip');
+        }
+    </script>
+</body>
+</html>
