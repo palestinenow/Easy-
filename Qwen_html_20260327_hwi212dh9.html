@@ -36,7 +36,7 @@
         }
         .drop:hover, .drop.active { background: #f0f4ff; border-color: #764ba2; }
         .drop.done { border-style: solid; background: #e8f5e9; border-color: #4caf50; }
-        input { display: none; }
+        input[type="file"] { display: none; }
         .icon { font-size: 40px; margin-bottom: 10px; }
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
@@ -65,7 +65,7 @@
         .download-area { display: none; margin-top: 20px; }
         .hidden { display: none; }
         
-        /* BIG SCALE SLIDER SECTION */
+        /* SCALE SECTION - FIXED */
         .scale-section {
             background: linear-gradient(135deg, #667eea, #764ba2);
             padding: 30px;
@@ -83,36 +83,65 @@
             margin: 20px 0;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        .scale-slider-container {
+        
+        /* SLIDER BUTTONS */
+        .scale-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
             margin: 20px 0;
         }
-        .scale-slider {
+        .scale-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: white;
+            color: #667eea;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .scale-btn:hover {
+            transform: scale(1.1);
+            background: #f0f0f0;
+        }
+        .scale-btn:active {
+            transform: scale(0.95);
+        }
+        
+        /* SLIDER TRACK - VISIBLE */
+        .slider-track {
             width: 100%;
-            height: 20px;
-            border-radius: 10px;
-            background: #fff;
-            outline: none;
-            -webkit-appearance: none;
+            height: 30px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 15px;
+            position: relative;
+            margin: 20px 0;
             cursor: pointer;
         }
-        .scale-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-            border: 4px solid #667eea;
+        .slider-fill {
+            height: 100%;
+            background: white;
+            border-radius: 15px;
+            width: 65%;
+            transition: width 0.2s;
         }
-        .scale-slider::-moz-range-thumb {
+        .slider-thumb {
             width: 40px;
             height: 40px;
+            background: white;
             border-radius: 50%;
-            background: #fff;
-            cursor: pointer;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            right: -20px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
             border: 4px solid #667eea;
+            cursor: grab;
         }
         .scale-labels {
             display: flex;
@@ -120,10 +149,6 @@
             margin-top: 10px;
             font-size: 14px;
             opacity: 0.9;
-        }
-        .scale-icon {
-            font-size: 30px;
-            margin: 0 10px;
         }
         .nav-buttons {
             display: flex;
@@ -142,6 +167,20 @@
         .saved-indicator.done {
             background: #28a745;
         }
+        .input-number {
+            width: 80px;
+            padding: 10px;
+            font-size: 18px;
+            text-align: center;
+            border: 2px solid white;
+            border-radius: 8px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: bold;
+        }
+        .input-number::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+        }
     </style>
 </head>
 <body>
@@ -151,7 +190,7 @@
         
         <div>
             <span class="badge">✅ 2048×2048px</span>
-            <span class="badge">✅ Scale Slider</span>
+            <span class="badge">✅ Scale Control</span>
             <span class="badge">✅ Live Preview</span>
         </div>
 
@@ -186,24 +225,34 @@
                 <img id="livePreview" src="" alt="Preview">
             </div>
 
-            <!-- BIG SCALE SLIDER -->
+            <!-- SCALE CONTROL SECTION -->
             <div class="scale-section">
                 <h3>🎚️ ADJUST PHOTO SCALE</h3>
+                
                 <div class="scale-display">
-                    <span class="scale-icon">📐</span>
-                    <span id="scaleValue">65%</span>
-                    <span class="scale-icon">📐</span>
+                    📐 <span id="scaleValue">65</span>% 📐
                 </div>
-                <div class="scale-slider-container">
-                    <input type="range" class="scale-slider" id="scaleSlider" min="40" max="90" value="65" oninput="updateScale()">
+                
+                <!-- +/- BUTTONS -->
+                <div class="scale-controls">
+                    <button class="scale-btn" onclick="changeScale(-5)">−</button>
+                    <input type="number" class="input-number" id="scaleInput" value="65" min="40" max="90" onchange="setScale(this.value)">
+                    <button class="scale-btn" onclick="changeScale(5)">+</button>
                 </div>
+                
+                <!-- VISUAL SLIDER TRACK -->
+                <div class="slider-track" onclick="clickSlider(event)">
+                    <div class="slider-fill" id="sliderFill"></div>
+                    <div class="slider-thumb" id="sliderThumb"></div>
+                </div>
+                
                 <div class="scale-labels">
                     <span>40% (Thick Frame)</span>
                     <span>65% (Default)</span>
                     <span>90% (Thin Frame)</span>
                 </div>
                 <p style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
-                    ⬅️ Slide left = More frame visible | Slide right = More photo visible ➡️
+                    ⬅️ Use buttons or drag slider | Slide left = More frame | Slide right = More photo ➡️
                 </p>
             </div>
 
@@ -247,12 +296,15 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         const OUTPUT_SIZE = 2048;
+        const MIN_SCALE = 40;
+        const MAX_SCALE = 90;
 
         let frame = null;
         let photos = [];
         let photoSettings = [];
         let currentIndex = 0;
         let results = [];
+        let currentScale = 65;
 
         function loadFrame(input) {
             const file = input.files[0];
@@ -291,6 +343,7 @@
             document.getElementById('controls').style.display = 'block';
             document.getElementById('batchArea').classList.remove('hidden');
             currentIndex = 0;
+            currentScale = 65;
             loadPhoto(currentIndex);
         }
 
@@ -298,17 +351,18 @@
             const file = photos[index];
             const settings = photoSettings[index];
             
+            currentScale = settings.scale;
+            updateScaleDisplay();
+            
             document.getElementById('currentPhotoName').textContent = file.name;
             document.getElementById('currentProgress').textContent = (index + 1) + '/' + photos.length;
-            document.getElementById('scaleSlider').value = settings.scale;
-            document.getElementById('scaleValue').textContent = settings.scale + '%';
             document.getElementById('savedCount').textContent = photoSettings.filter(s => s.saved).length;
             
             document.getElementById('prevBtn').disabled = index === 0;
             document.getElementById('nextBtn').disabled = index === photos.length - 1;
             
             updateSavedIndicators();
-            generatePreview(file, settings.scale);
+            generatePreview(file, currentScale);
         }
 
         function updateSavedIndicators() {
@@ -320,6 +374,41 @@
                 indicator.title = 'Photo ' + (i + 1);
                 container.appendChild(indicator);
             });
+        }
+
+        function updateScaleDisplay() {
+            document.getElementById('scaleValue').textContent = currentScale;
+            document.getElementById('scaleInput').value = currentScale;
+            
+            const percent = ((currentScale - MIN_SCALE) / (MAX_SCALE - MIN_SCALE)) * 100;
+            document.getElementById('sliderFill').style.width = percent + '%';
+            document.getElementById('sliderThumb').style.right = (100 - percent) + '%';
+        }
+
+        function changeScale(delta) {
+            currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale + delta));
+            photoSettings[currentIndex].scale = currentScale;
+            updateScaleDisplay();
+            generatePreview(photos[currentIndex], currentScale);
+        }
+
+        function setScale(value) {
+            currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, parseInt(value) || 65));
+            photoSettings[currentIndex].scale = currentScale;
+            updateScaleDisplay();
+            generatePreview(photos[currentIndex], currentScale);
+        }
+
+        function clickSlider(event) {
+            const track = event.currentTarget;
+            const rect = track.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const percent = x / rect.width;
+            currentScale = Math.round(MIN_SCALE + percent * (MAX_SCALE - MIN_SCALE));
+            currentScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, currentScale));
+            photoSettings[currentIndex].scale = currentScale;
+            updateScaleDisplay();
+            generatePreview(photos[currentIndex], currentScale);
         }
 
         function generatePreview(file, scale) {
@@ -349,13 +438,6 @@
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
-        }
-
-        function updateScale() {
-            const scale = document.getElementById('scaleSlider').value;
-            document.getElementById('scaleValue').textContent = scale + '%';
-            photoSettings[currentIndex].scale = scale;
-            generatePreview(photos[currentIndex], scale);
         }
 
         function saveCurrent() {
