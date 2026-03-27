@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Frame Tool - 2048px</title>
+    <title>Instagram Frame Tool - Individual Control</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -20,7 +20,7 @@
             border-radius: 15px;
             padding: 40px;
             text-align: center;
-            max-width: 600px;
+            max-width: 700px;
             width: 100%;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
@@ -42,44 +42,47 @@
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             border: none;
-            padding: 15px 40px;
-            font-size: 18px;
+            padding: 15px 30px;
+            font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
             margin: 10px;
         }
         .btn:hover { transform: scale(1.05); }
         .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .btn-secondary { background: #6c757d; }
+        .btn-success { background: #28a745; }
         .progress { margin: 20px 0; display: none; }
         .bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 15px; overflow: hidden; }
         .fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: 0.3s; }
         .text { margin-top: 10px; font-weight: bold; color: #333; }
         .info { color: #666; margin-top: 20px; font-size: 13px; line-height: 1.6; }
         .badge { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; display: inline-block; margin: 5px; }
-        .preview { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; display: none; }
-        .preview img { max-width: 200px; border: 1px solid #ddd; }
-        .diagram { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 12px; }
+        .preview-area { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; display: none; }
+        .preview-area img { max-width: 300px; border: 1px solid #ddd; margin: 10px 0; }
+        .controls { display: none; margin: 20px 0; }
+        .slider-container { margin: 20px 0; }
+        .slider-container label { display: block; margin-bottom: 10px; font-weight: bold; color: #333; }
+        .slider { width: 100%; height: 10px; border-radius: 5px; background: #ddd; outline: none; -webkit-appearance: none; }
+        .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: #667eea; cursor: pointer; }
+        .scale-value { font-size: 18px; color: #667eea; font-weight: bold; margin-top: 5px; }
+        .photo-info { background: #e8f5e9; padding: 10px; border-radius: 8px; margin: 10px 0; }
+        .download-area { display: none; margin-top: 20px; }
+        .hidden { display: none; }
     </style>
 </head>
 <body>
     <div class="box">
         <h1>🖼️ Instagram Frame Maker</h1>
-        <h2>High Quality 2048×2048px</h2>
+        <h2>Adjust Each Photo Individually</h2>
         
         <div>
             <span class="badge">✅ 2048×2048px Output</span>
-            <span class="badge">✅ PNG Frame 100%</span>
-            <span class="badge">✅ Photo Inside Frame</span>
-            <span class="badge">✅ Auto 1:1 Crop</span>
+            <span class="badge">✅ Individual Scale Control</span>
+            <span class="badge">✅ Preview Before Process</span>
         </div>
 
-        <div class="diagram">
-            <b>📐 How it works:</b><br>
-            Layer 1: White background (2048×2048)<br>
-            Layer 2: Your photo (smaller, centered, 1:1 crop)<br>
-            Layer 3: PNG frame (100%, on top) ← Borders visible!
-        </div>
-
+        <!-- Step 1: Upload Frame -->
         <div class="drop" id="frameDrop" onclick="document.getElementById('frameInput').click()">
             <input type="file" id="frameInput" accept="image/png" onchange="loadFrame(this)">
             <div class="icon">🖼️</div>
@@ -87,6 +90,7 @@
             <p id="frameStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
+        <!-- Step 2: Upload Photos -->
         <div class="drop" id="photosDrop" onclick="document.getElementById('photosInput').click()">
             <input type="file" id="photosInput" accept="image/*" multiple onchange="loadPhotos(this)">
             <div class="icon">📁</div>
@@ -94,29 +98,59 @@
             <p id="photosStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
-        <button class="btn" id="goBtn" onclick="process()" disabled>🚀 START PROCESSING</button>
+        <button class="btn" id="startBtn" onclick="startEditing()" disabled>✏️ START EDITING</button>
 
+        <!-- Individual Photo Editor -->
+        <div class="controls" id="controls">
+            <div class="photo-info">
+                <b>Photo:</b> <span id="currentPhotoName">-</span><br>
+                <b>Progress:</b> <span id="currentProgress">1/1</span>
+            </div>
+
+            <div class="preview-area" id="previewArea" style="display: block;">
+                <p><b>Live Preview:</b></p>
+                <img id="livePreview" src="" alt="Preview">
+            </div>
+
+            <div class="slider-container">
+                <label>📐 Photo Scale: <span class="scale-value" id="scaleValue">65%</span></label>
+                <input type="range" class="slider" id="scaleSlider" min="40" max="90" value="65" oninput="updateScale()">
+                <p style="color: #666; font-size: 12px; margin-top: 5px;">40% (thick frame) ← → 90% (thin frame)</p>
+            </div>
+
+            <div>
+                <button class="btn btn-secondary" id="prevBtn" onclick="prevPhoto()">⬅️ Previous</button>
+                <button class="btn" id="nextBtn" onclick="nextPhoto()">Next ➡️</button>
+                <button class="btn btn-success" id="saveBtn" onclick="saveCurrent()">💾 Save This</button>
+            </div>
+
+            <p style="margin-top: 15px; color: #666; font-size: 13px;">
+                ✅ Saved: <span id="savedCount">0</span> / <span id="totalCount">0</span> photos
+            </p>
+        </div>
+
+        <!-- Batch Process Button -->
+        <div id="batchArea" class="hidden">
+            <button class="btn btn-success" id="processAllBtn" onclick="processAll()">🚀 PROCESS ALL SAVED</button>
+        </div>
+
+        <!-- Progress -->
         <div class="progress" id="progress">
             <div class="bar"><div class="fill" id="fill"></div></div>
             <div class="text" id="progressText">0/0</div>
         </div>
 
-        <div class="preview" id="preview">
-            <p><b>Preview (first result):</b></p>
-            <img id="previewImg" src="" alt="Preview">
-        </div>
-
-        <div id="downloadArea" style="display:none;">
+        <!-- Download -->
+        <div class="download-area" id="downloadArea">
             <button class="btn" onclick="downloadAll()">📥 Download All</button>
             <button class="btn" onclick="downloadZip()">📦 Download ZIP</button>
         </div>
 
         <p class="info">
-            🎯 Output: <b>2048×2048px PNG (High Quality)</b><br>
-            🖼️ Frame: <b>100% size (on top)</b><br>
-            📷 Photo: <b>Smaller inside frame (borders visible)</b><br>
-            🔒 Private - images never leave your computer<br>
-            ⚡ Works offline
+            🎯 Output: <b>2048×2048px PNG</b><br>
+            🖼️ Frame: <b>100% size</b><br>
+            📷 Photo: <b>Adjust scale per photo (40%-90%)</b><br>
+            🔒 Private - images never leave your computer
         </p>
     </div>
 
@@ -124,11 +158,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         // === CONFIGURATION ===
-        const OUTPUT_SIZE = 2048;       // Final output: 2048×2048px (matches your PNG)
-        const PHOTO_SCALE = 0.72;       // Photo size (72% = frame shows ~14% on each side)
+        const OUTPUT_SIZE = 2048;
         // =====================
 
-        let frame = null, photos = [], results = [];
+        let frame = null;
+        let photos = [];
+        let photoSettings = [];
+        let currentIndex = 0;
+        let results = [];
 
         function loadFrame(input) {
             const file = input.files[0];
@@ -139,7 +176,7 @@
                     frame.onload = () => {
                         document.getElementById('frameDrop').classList.add('done');
                         document.getElementById('frameStatus').textContent = '✓ ' + file.name + ' (' + frame.width + '×' + frame.height + 'px)';
-                        check();
+                        checkReady();
                     };
                     frame.src = e.target.result;
                 };
@@ -152,40 +189,149 @@
             if (photos.length > 0) {
                 document.getElementById('photosDrop').classList.add('done');
                 document.getElementById('photosStatus').textContent = '✓ ' + photos.length + ' photos selected';
-                check();
+                
+                // Initialize settings for each photo (default 65%)
+                photoSettings = photos.map(() => ({ scale: 65, saved: false }));
+                
+                document.getElementById('totalCount').textContent = photos.length;
+                checkReady();
             }
         }
 
-        function check() {
-            document.getElementById('goBtn').disabled = !(frame && photos.length > 0);
+        function checkReady() {
+            document.getElementById('startBtn').disabled = !(frame && photos.length > 0);
         }
 
-        async function process() {
+        function startEditing() {
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('controls').style.display = 'block';
+            document.getElementById('batchArea').classList.remove('hidden');
+            currentIndex = 0;
+            loadPhoto(currentIndex);
+        }
+
+        function loadPhoto(index) {
+            const file = photos[index];
+            const settings = photoSettings[index];
+            
+            document.getElementById('currentPhotoName').textContent = file.name;
+            document.getElementById('currentProgress').textContent = (index + 1) + '/' + photos.length;
+            document.getElementById('scaleSlider').value = settings.scale;
+            document.getElementById('scaleValue').textContent = settings.scale + '%';
+            document.getElementById('savedCount').textContent = photoSettings.filter(s => s.saved).length;
+            
+            // Update button states
+            document.getElementById('prevBtn').disabled = index === 0;
+            document.getElementById('nextBtn').disabled = index === photos.length - 1;
+            
+            // Generate preview
+            generatePreview(file, settings.scale);
+        }
+
+        function generatePreview(file, scale) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = OUTPUT_SIZE;
+                    canvas.height = OUTPUT_SIZE;
+
+                    // White background
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+
+                    // Crop photo 1:1 from center
+                    const minSize = Math.min(img.width, img.height);
+                    const cropX = (img.width - minSize) / 2;
+                    const cropY = (img.height - minSize) / 2;
+                    const photoSize = OUTPUT_SIZE * (scale / 100);
+                    const photoPos = (OUTPUT_SIZE - photoSize) / 2;
+
+                    ctx.drawImage(img, cropX, cropY, minSize, minSize, photoPos, photoPos, photoSize, photoSize);
+
+                    // Frame on top
+                    ctx.drawImage(frame, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
+
+                    document.getElementById('livePreview').src = canvas.toDataURL('image/png');
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function updateScale() {
+            const scale = document.getElementById('scaleSlider').value;
+            document.getElementById('scaleValue').textContent = scale + '%';
+            photoSettings[currentIndex].scale = scale;
+            generatePreview(photos[currentIndex], scale);
+        }
+
+        function saveCurrent() {
+            photoSettings[currentIndex].saved = true;
+            document.getElementById('savedCount').textContent = photoSettings.filter(s => s.saved).length;
+            
+            // Visual feedback
+            const saveBtn = document.getElementById('saveBtn');
+            saveBtn.textContent = '✓ Saved!';
+            saveBtn.style.background = '#28a745';
+            setTimeout(() => {
+                saveBtn.textContent = '💾 Save This';
+                saveBtn.style.background = '';
+            }, 1000);
+            
+            // Auto advance
+            if (currentIndex < photos.length - 1) {
+                setTimeout(() => nextPhoto(), 500);
+            }
+        }
+
+        function prevPhoto() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                loadPhoto(currentIndex);
+            }
+        }
+
+        function nextPhoto() {
+            if (currentIndex < photos.length - 1) {
+                currentIndex++;
+                loadPhoto(currentIndex);
+            }
+        }
+
+        async function processAll() {
+            const savedCount = photoSettings.filter(s => s.saved).length;
+            if (savedCount === 0) {
+                alert('Please save at least one photo first!');
+                return;
+            }
+
             document.getElementById('progress').style.display = 'block';
             document.getElementById('downloadArea').style.display = 'none';
-            document.getElementById('preview').style.display = 'none';
+            document.getElementById('batchArea').style.display = 'none';
             results = [];
 
+            let processed = 0;
             for (let i = 0; i < photos.length; i++) {
-                const processed = await applyFrame(photos[i]);
-                results.push(processed);
-
-                if (i === 0) {
-                    document.getElementById('previewImg').src = processed.url;
-                    document.getElementById('preview').style.display = 'block';
+                if (photoSettings[i].saved) {
+                    const processedImg = await applyFrame(photos[i], photoSettings[i].scale);
+                    results.push(processedImg);
+                    processed++;
                 }
 
-                const pct = Math.round(((i + 1) / photos.length) * 100);
+                const pct = Math.round((processed / savedCount) * 100);
                 document.getElementById('fill').style.width = pct + '%';
-                document.getElementById('progressText').textContent = (i + 1) + '/' + photos.length + ' - ' + photos[i].name;
+                document.getElementById('progressText').textContent = processed + '/' + savedCount;
                 await new Promise(r => setTimeout(r, 50));
             }
 
-            document.getElementById('progressText').textContent = '✅ Done! ' + results.length + ' images with frame!';
+            document.getElementById('progressText').textContent = '✅ Done! ' + results.length + ' images ready!';
             document.getElementById('downloadArea').style.display = 'block';
         }
 
-        function applyFrame(file) {
+        function applyFrame(file, scale) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = e => {
@@ -196,20 +342,16 @@
                         canvas.width = OUTPUT_SIZE;
                         canvas.height = OUTPUT_SIZE;
 
-                        // LAYER 1: White background
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-                        // LAYER 2: Photo (cropped 1:1, smaller, centered)
                         const minSize = Math.min(img.width, img.height);
                         const cropX = (img.width - minSize) / 2;
                         const cropY = (img.height - minSize) / 2;
-                        const photoSize = OUTPUT_SIZE * PHOTO_SCALE;
+                        const photoSize = OUTPUT_SIZE * (scale / 100);
                         const photoPos = (OUTPUT_SIZE - photoSize) / 2;
 
                         ctx.drawImage(img, cropX, cropY, minSize, minSize, photoPos, photoPos, photoSize, photoSize);
-
-                        // LAYER 3: PNG Frame (100% size, on top - shows borders!)
                         ctx.drawImage(frame, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
                         canvas.toBlob(blob => {
