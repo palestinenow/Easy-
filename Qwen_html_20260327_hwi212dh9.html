@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram Frame Tool</title>
+    <title>Instagram Frame Tool - 2048px</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -64,26 +64,26 @@
 <body>
     <div class="box">
         <h1>🖼️ Instagram Frame Maker</h1>
-        <h2>Photo inside frame (PNG cadre)</h2>
+        <h2>High Quality 2048×2048px</h2>
         
         <div>
-            <span class="badge">✅ 275x275px Output</span>
+            <span class="badge">✅ 2048×2048px Output</span>
             <span class="badge">✅ PNG Frame 100%</span>
-            <span class="badge">✅ Photo Smaller Inside</span>
+            <span class="badge">✅ Photo Inside Frame</span>
             <span class="badge">✅ Auto 1:1 Crop</span>
         </div>
 
         <div class="diagram">
             <b>📐 How it works:</b><br>
-            Layer 1: White background (275×275)<br>
-            Layer 2: Your photo (smaller, centered)<br>
-            Layer 3: PNG frame (100%, on top) ← Shows borders!
+            Layer 1: White background (2048×2048)<br>
+            Layer 2: Your photo (smaller, centered, 1:1 crop)<br>
+            Layer 3: PNG frame (100%, on top) ← Borders visible!
         </div>
 
         <div class="drop" id="frameDrop" onclick="document.getElementById('frameInput').click()">
             <input type="file" id="frameInput" accept="image/png" onchange="loadFrame(this)">
             <div class="icon">🖼️</div>
-            <p><b>Step 1:</b> Upload PNG frame (275×275px recommended)</p>
+            <p><b>Step 1:</b> Upload PNG frame (2048×2048px)</p>
             <p id="frameStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
@@ -112,9 +112,9 @@
         </div>
 
         <p class="info">
-            🎯 Output: <b>275x275px PNG</b><br>
+            🎯 Output: <b>2048×2048px PNG (High Quality)</b><br>
             🖼️ Frame: <b>100% size (on top)</b><br>
-            📷 Photo: <b>Smaller inside frame (visible borders)</b><br>
+            📷 Photo: <b>Smaller inside frame (borders visible)</b><br>
             🔒 Private - images never leave your computer<br>
             ⚡ Works offline
         </p>
@@ -124,7 +124,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         // === CONFIGURATION ===
-        const OUTPUT_SIZE = 275;        // Final output: 275x275px
+        const OUTPUT_SIZE = 2048;       // Final output: 2048×2048px (matches your PNG)
         const PHOTO_SCALE = 0.72;       // Photo size (72% = frame shows ~14% on each side)
         // =====================
 
