@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram 1:1 Template Tool</title>
+    <title>Instagram Frame Tool</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -57,33 +57,41 @@
         .info { color: #666; margin-top: 20px; font-size: 13px; line-height: 1.6; }
         .badge { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; display: inline-block; margin: 5px; }
         .preview { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; display: none; }
-        .preview img { max-width: 150px; border: 1px solid #ddd; }
+        .preview img { max-width: 200px; border: 1px solid #ddd; }
+        .diagram { background: #f9f9f9; padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 12px; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h1>📸 Instagram 1:1 Post Maker</h1>
-        <h2>275px Square + White Background + Template</h2>
+        <h1>🖼️ Instagram Frame Maker</h1>
+        <h2>Photo inside frame (PNG cadre)</h2>
         
         <div>
             <span class="badge">✅ 275x275px Output</span>
-            <span class="badge">✅ White Background</span>
-            <span class="badge">✅ 25% Margin</span>
-            <span class="badge">✅ Template Overlay</span>
+            <span class="badge">✅ PNG Frame 100%</span>
+            <span class="badge">✅ Photo Smaller Inside</span>
+            <span class="badge">✅ Auto 1:1 Crop</span>
         </div>
 
-        <div class="drop" id="templateDrop" onclick="document.getElementById('templateInput').click()">
-            <input type="file" id="templateInput" accept="image/png" onchange="loadTemplate(this)">
-            <div class="icon">📋</div>
-            <p><b>Step 1:</b> Upload template.png (275x275 recommended)</p>
-            <p id="templateStatus" style="color: #667eea; margin-top: 10px;"></p>
+        <div class="diagram">
+            <b>📐 How it works:</b><br>
+            Layer 1: White background (275×275)<br>
+            Layer 2: Your photo (smaller, centered)<br>
+            Layer 3: PNG frame (100%, on top) ← Shows borders!
         </div>
 
-        <div class="drop" id="imagesDrop" onclick="document.getElementById('imagesInput').click()">
-            <input type="file" id="imagesInput" accept="image/*" multiple onchange="loadImages(this)">
+        <div class="drop" id="frameDrop" onclick="document.getElementById('frameInput').click()">
+            <input type="file" id="frameInput" accept="image/png" onchange="loadFrame(this)">
+            <div class="icon">🖼️</div>
+            <p><b>Step 1:</b> Upload PNG frame (275×275px recommended)</p>
+            <p id="frameStatus" style="color: #667eea; margin-top: 10px;"></p>
+        </div>
+
+        <div class="drop" id="photosDrop" onclick="document.getElementById('photosInput').click()">
+            <input type="file" id="photosInput" accept="image/*" multiple onchange="loadPhotos(this)">
             <div class="icon">📁</div>
-            <p><b>Step 2:</b> Select all images (any size/ratio)</p>
-            <p id="imagesStatus" style="color: #667eea; margin-top: 10px;"></p>
+            <p><b>Step 2:</b> Select all photos (any size/ratio)</p>
+            <p id="photosStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
         <button class="btn" id="goBtn" onclick="process()" disabled>🚀 START PROCESSING</button>
@@ -104,11 +112,11 @@
         </div>
 
         <p class="info">
-            🎯 Output: <b>275x275px PNG (1:1 Square)</b><br>
-            🖼️ Background: <b>Always White</b><br>
-            📐 Image Margin: <b>25% from borders (centered)</b><br>
+            🎯 Output: <b>275x275px PNG</b><br>
+            🖼️ Frame: <b>100% size (on top)</b><br>
+            📷 Photo: <b>Smaller inside frame (visible borders)</b><br>
             🔒 Private - images never leave your computer<br>
-            ⚡ Works offline - no internet needed after load
+            ⚡ Works offline
         </p>
     </div>
 
@@ -116,40 +124,40 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <script>
         // === CONFIGURATION ===
-        const OUTPUT_SIZE = 275;        // Final output size (275x275px)
-        const IMAGE_SCALE = 0.75;       // Image size (75% = 25% margin from borders)
+        const OUTPUT_SIZE = 275;        // Final output: 275x275px
+        const PHOTO_SCALE = 0.72;       // Photo size (72% = frame shows ~14% on each side)
         // =====================
 
-        let template = null, images = [], results = [];
+        let frame = null, photos = [], results = [];
 
-        function loadTemplate(input) {
+        function loadFrame(input) {
             const file = input.files[0];
             if (file && file.type === 'image/png') {
                 const reader = new FileReader();
                 reader.onload = e => {
-                    template = new Image();
-                    template.onload = () => {
-                        document.getElementById('templateDrop').classList.add('done');
-                        document.getElementById('templateStatus').textContent = '✓ ' + file.name + ' (' + template.width + 'x' + template.height + 'px)';
+                    frame = new Image();
+                    frame.onload = () => {
+                        document.getElementById('frameDrop').classList.add('done');
+                        document.getElementById('frameStatus').textContent = '✓ ' + file.name + ' (' + frame.width + '×' + frame.height + 'px)';
                         check();
                     };
-                    template.src = e.target.result;
+                    frame.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
             }
         }
 
-        function loadImages(input) {
-            images = Array.from(input.files).filter(f => f.type.startsWith('image/'));
-            if (images.length > 0) {
-                document.getElementById('imagesDrop').classList.add('done');
-                document.getElementById('imagesStatus').textContent = '✓ ' + images.length + ' images selected';
+        function loadPhotos(input) {
+            photos = Array.from(input.files).filter(f => f.type.startsWith('image/'));
+            if (photos.length > 0) {
+                document.getElementById('photosDrop').classList.add('done');
+                document.getElementById('photosStatus').textContent = '✓ ' + photos.length + ' photos selected';
                 check();
             }
         }
 
         function check() {
-            document.getElementById('goBtn').disabled = !(template && images.length > 0);
+            document.getElementById('goBtn').disabled = !(frame && photos.length > 0);
         }
 
         async function process() {
@@ -158,62 +166,56 @@
             document.getElementById('preview').style.display = 'none';
             results = [];
 
-            for (let i = 0; i < images.length; i++) {
-                const processed = await cropAndApply(images[i]);
+            for (let i = 0; i < photos.length; i++) {
+                const processed = await applyFrame(photos[i]);
                 results.push(processed);
 
-                // Show preview of first image
                 if (i === 0) {
                     document.getElementById('previewImg').src = processed.url;
                     document.getElementById('preview').style.display = 'block';
                 }
 
-                const pct = Math.round(((i + 1) / images.length) * 100);
+                const pct = Math.round(((i + 1) / photos.length) * 100);
                 document.getElementById('fill').style.width = pct + '%';
-                document.getElementById('progressText').textContent = (i + 1) + '/' + images.length + ' - ' + images[i].name;
+                document.getElementById('progressText').textContent = (i + 1) + '/' + photos.length + ' - ' + photos[i].name;
                 await new Promise(r => setTimeout(r, 50));
             }
 
-            document.getElementById('progressText').textContent = '✅ All Done! ' + results.length + ' images ready for Instagram!';
+            document.getElementById('progressText').textContent = '✅ Done! ' + results.length + ' images with frame!';
             document.getElementById('downloadArea').style.display = 'block';
         }
 
-        function cropAndApply(file) {
+        function applyFrame(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = e => {
                     const img = new Image();
                     img.onload = () => {
-                        // Create canvas with fixed 275x275 size
                         const canvas = document.createElement('canvas');
                         const ctx = canvas.getContext('2d');
                         canvas.width = OUTPUT_SIZE;
                         canvas.height = OUTPUT_SIZE;
 
-                        // STEP 1: Fill background with WHITE
+                        // LAYER 1: White background
                         ctx.fillStyle = '#FFFFFF';
                         ctx.fillRect(0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-                        // STEP 2: Crop original image to 1:1 from center
+                        // LAYER 2: Photo (cropped 1:1, smaller, centered)
                         const minSize = Math.min(img.width, img.height);
                         const cropX = (img.width - minSize) / 2;
                         const cropY = (img.height - minSize) / 2;
+                        const photoSize = OUTPUT_SIZE * PHOTO_SCALE;
+                        const photoPos = (OUTPUT_SIZE - photoSize) / 2;
 
-                        // STEP 3: Calculate image size (75% of canvas = 25% margin)
-                        const imageSize = OUTPUT_SIZE * IMAGE_SCALE;  // 275 * 0.75 = ~206px
-                        const imagePos = (OUTPUT_SIZE - imageSize) / 2;  // Center position
+                        ctx.drawImage(img, cropX, cropY, minSize, minSize, photoPos, photoPos, photoSize, photoSize);
 
-                        // STEP 4: Draw cropped image centered with margin
-                        ctx.drawImage(img, cropX, cropY, minSize, minSize, imagePos, imagePos, imageSize, imageSize);
+                        // LAYER 3: PNG Frame (100% size, on top - shows borders!)
+                        ctx.drawImage(frame, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
-                        // STEP 5: Overlay template (full 275x275)
-                        ctx.drawImage(template, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
-
-                        // Export as PNG
                         canvas.toBlob(blob => {
                             const newFile = new File(
                                 [blob], 
-                                'insta_' + file.name.replace(/\.[^/.]+$/, '') + '.png', 
+                                'framed_' + file.name.replace(/\.[^/.]+$/, '') + '.png', 
                                 {type: 'image/png'}
                             );
                             resolve({file: newFile, url: URL.createObjectURL(blob)});
@@ -233,7 +235,7 @@
             const zip = new JSZip();
             results.forEach(r => zip.file(r.file.name, r.file));
             const content = await zip.generateAsync({type: 'blob'});
-            saveAs(content, 'instagram_posts.zip');
+            saveAs(content, 'framed_images.zip');
         }
     </script>
 </body>
