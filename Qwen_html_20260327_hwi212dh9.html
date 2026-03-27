@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>1:1 Crop + Template Tool</title>
+    <title>Instagram 1:1 Template Tool</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -24,18 +24,20 @@
             width: 100%;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
-        h1 { color: #333; margin-bottom: 30px; }
+        h1 { color: #333; margin-bottom: 10px; }
+        h2 { color: #666; font-size: 16px; margin-bottom: 30px; font-weight: normal; }
         .drop {
             border: 3px dashed #667eea;
             border-radius: 10px;
-            padding: 40px;
-            margin: 20px 0;
+            padding: 30px;
+            margin: 15px 0;
             cursor: pointer;
             transition: 0.3s;
         }
         .drop:hover, .drop.active { background: #f0f4ff; border-color: #764ba2; }
         .drop.done { border-style: solid; background: #e8f5e9; border-color: #4caf50; }
         input { display: none; }
+        .icon { font-size: 40px; margin-bottom: 10px; }
         .btn {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
@@ -51,37 +53,37 @@
         .progress { margin: 20px 0; display: none; }
         .bar { width: 100%; height: 25px; background: #e0e0e0; border-radius: 15px; overflow: hidden; }
         .fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: 0.3s; }
-        .text { margin-top: 10px; font-weight: bold; }
-        .info { color: #666; margin-top: 20px; font-size: 14px; }
-        .feature { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; }
-        .feature p { color: #333; margin: 5px 0; }
+        .text { margin-top: 10px; font-weight: bold; color: #333; }
+        .info { color: #666; margin-top: 20px; font-size: 13px; line-height: 1.6; }
+        .badge { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; display: inline-block; margin: 5px; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h1>🖼️ 1:1 Crop + Template</h1>
+        <h1>📸 Instagram 1:1 Post Maker</h1>
+        <h2>Auto crop to square + Add template</h2>
         
-        <div class="feature">
-            <p>✅ Auto crop all images to <b>1:1 square</b> (center)</p>
-            <p>✅ Apply <b>template.png</b> on top</p>
-            <p>✅ Output: <b>1:1 square PNG</b></p>
+        <div>
+            <span class="badge">✅ Auto 1:1 Crop</span>
+            <span class="badge">✅ Center Cut</span>
+            <span class="badge">✅ Template Overlay</span>
         </div>
 
         <div class="drop" id="templateDrop" onclick="document.getElementById('templateInput').click()">
             <input type="file" id="templateInput" accept="image/png" onchange="loadTemplate(this)">
-            <p style="font-size: 40px;">📋</p>
-            <p><b>Step 1:</b> Upload template.png (1:1)</p>
-            <p id="templateStatus" style="color: #667eea;"></p>
+            <div class="icon">📋</div>
+            <p><b>Step 1:</b> Upload template.png (1:1 square)</p>
+            <p id="templateStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
         <div class="drop" id="imagesDrop" onclick="document.getElementById('imagesInput').click()">
             <input type="file" id="imagesInput" accept="image/*" multiple onchange="loadImages(this)">
-            <p style="font-size: 40px;">📁</p>
-            <p><b>Step 2:</b> Select all images (any size)</p>
-            <p id="imagesStatus" style="color: #667eea;"></p>
+            <div class="icon">📁</div>
+            <p><b>Step 2:</b> Select all images (any size/ratio)</p>
+            <p id="imagesStatus" style="color: #667eea; margin-top: 10px;"></p>
         </div>
 
-        <button class="btn" id="goBtn" onclick="process()" disabled>🚀 START</button>
+        <button class="btn" id="goBtn" onclick="process()" disabled>🚀 START PROCESSING</button>
 
         <div class="progress" id="progress">
             <div class="bar"><div class="fill" id="fill"></div></div>
@@ -93,7 +95,12 @@
             <button class="btn" onclick="downloadZip()">📦 Download ZIP</button>
         </div>
 
-        <p class="info">✅ Works offline • ✅ Private • ✅ No limits</p>
+        <p class="info">
+            🎯 All output: <b>1:1 Square (Instagram Ready)</b><br>
+            ✂️ Auto center crop from any image<br>
+            🔒 Private - images never leave your computer<br>
+            ⚡ Works offline - no internet needed after load
+        </p>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -122,7 +129,7 @@
             images = Array.from(input.files).filter(f => f.type.startsWith('image/'));
             if (images.length > 0) {
                 document.getElementById('imagesDrop').classList.add('done');
-                document.getElementById('imagesStatus').textContent = '✓ ' + images.length + ' images';
+                document.getElementById('imagesStatus').textContent = '✓ ' + images.length + ' images selected';
                 check();
             }
         }
@@ -142,11 +149,11 @@
 
                 const pct = Math.round(((i + 1) / images.length) * 100);
                 document.getElementById('fill').style.width = pct + '%';
-                document.getElementById('progressText').textContent = (i + 1) + '/' + images.length;
-                await new Promise(r => setTimeout(r, 30));
+                document.getElementById('progressText').textContent = (i + 1) + '/' + images.length + ' - ' + images[i].name;
+                await new Promise(r => setTimeout(r, 50));
             }
 
-            document.getElementById('progressText').textContent = '✅ Done!';
+            document.getElementById('progressText').textContent = '✅ All Done! ' + results.length + ' images ready for Instagram!';
             document.getElementById('downloadArea').style.display = 'block';
         }
 
@@ -156,40 +163,32 @@
                 reader.onload = e => {
                     const img = new Image();
                     img.onload = () => {
-                        // Step 1: Crop to 1:1 square from center
+                        // STEP 1: Crop to 1:1 square from center
                         const size = Math.min(img.width, img.height);
                         const cropX = (img.width - size) / 2;
                         const cropY = (img.height - size) / 2;
 
-                        // Create canvas for cropped image
-                        const cropCanvas = document.createElement('canvas');
-                        cropCanvas.width = size;
-                        cropCanvas.height = size;
-                        const cropCtx = cropCanvas.getContext('2d');
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
                         
+                        // Set canvas to square (1:1)
+                        canvas.width = size;
+                        canvas.height = size;
+
                         // Draw cropped center portion
-                        cropCtx.drawImage(img, cropX, cropY, size, size, 0, 0, size, size);
+                        ctx.drawImage(img, cropX, cropY, size, size, 0, 0, size, size);
 
-                        // Step 2: Apply template on top
-                        const finalCanvas = document.createElement('canvas');
-                        finalCanvas.width = size;
-                        finalCanvas.height = size;
-                        const finalCtx = finalCanvas.getContext('2d');
-                        
-                        // Draw cropped image
-                        finalCtx.drawImage(cropCanvas, 0, 0);
-                        
-                        // Draw template (scaled to fit)
-                        const scale = size / template.width;
-                        const tw = template.width * scale;
-                        const th = template.height * scale;
-                        const tx = (size - tw) / 2;
-                        const ty = (size - th) / 2;
-                        finalCtx.drawImage(template, tx, ty, tw, th);
+                        // STEP 2: Overlay template (1:1)
+                        ctx.drawImage(template, 0, 0, size, size);
 
-                        finalCanvas.toBlob(blob => {
-                            const newFile = new File([blob], 'square_' + file.name.replace(/\.[^/.]+$/, '') + '.png', {type: 'image/png'});
-                            resolve({file: newFile, url: URL.createObjectURL(blob)});
+                        // Export as PNG
+                        canvas.toBlob(blob => {
+                            const newFile = new File(
+                                [blob], 
+                                'instagram_' + file.name.replace(/\.[^/.]+$/, '') + '.png', 
+                                {type: 'image/png'}
+                            );
+                            resolve({file: newFile, url: URL.createObjectURL(blob), size: size});
                         }, 'image/png');
                     };
                     img.src = e.target.result;
@@ -206,7 +205,7 @@
             const zip = new JSZip();
             results.forEach(r => zip.file(r.file.name, r.file));
             const content = await zip.generateAsync({type: 'blob'});
-            saveAs(content, 'all_square_images.zip');
+            saveAs(content, 'instagram_posts.zip');
         }
     </script>
 </body>
