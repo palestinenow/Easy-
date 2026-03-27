@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Template Tool</title>
+    <title>1:1 Crop + Template Tool</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -53,23 +53,31 @@
         .fill { height: 100%; background: linear-gradient(135deg, #667eea, #764ba2); width: 0%; transition: 0.3s; }
         .text { margin-top: 10px; font-weight: bold; }
         .info { color: #666; margin-top: 20px; font-size: 14px; }
+        .feature { background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .feature p { color: #333; margin: 5px 0; }
     </style>
 </head>
 <body>
     <div class="box">
-        <h1>🖼️ Add Template to All Images</h1>
+        <h1>🖼️ 1:1 Crop + Template</h1>
         
+        <div class="feature">
+            <p>✅ Auto crop all images to <b>1:1 square</b> (center)</p>
+            <p>✅ Apply <b>template.png</b> on top</p>
+            <p>✅ Output: <b>1:1 square PNG</b></p>
+        </div>
+
         <div class="drop" id="templateDrop" onclick="document.getElementById('templateInput').click()">
             <input type="file" id="templateInput" accept="image/png" onchange="loadTemplate(this)">
             <p style="font-size: 40px;">📋</p>
-            <p><b>Step 1:</b> Upload template.png</p>
+            <p><b>Step 1:</b> Upload template.png (1:1)</p>
             <p id="templateStatus" style="color: #667eea;"></p>
         </div>
 
         <div class="drop" id="imagesDrop" onclick="document.getElementById('imagesInput').click()">
             <input type="file" id="imagesInput" accept="image/*" multiple onchange="loadImages(this)">
             <p style="font-size: 40px;">📁</p>
-            <p><b>Step 2:</b> Select all your images (0-60+)</p>
+            <p><b>Step 2:</b> Select all images (any size)</p>
             <p id="imagesStatus" style="color: #667eea;"></p>
         </div>
 
@@ -85,7 +93,7 @@
             <button class="btn" onclick="downloadZip()">📦 Download ZIP</button>
         </div>
 
-        <p class="info">✅ Works offline • ✅ Private (images stay on your computer) • ✅ No upload limits</p>
+        <p class="info">✅ Works offline • ✅ Private • ✅ No limits</p>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
@@ -101,7 +109,7 @@
                     template = new Image();
                     template.onload = () => {
                         document.getElementById('templateDrop').classList.add('done');
-                        document.getElementById('templateStatus').textContent = '✓ ' + file.name;
+                        document.getElementById('templateStatus').textContent = '✓ ' + file.name + ' (' + template.width + 'x' + template.height + ')';
                         check();
                     };
                     template.src = e.target.result;
@@ -129,7 +137,7 @@
             results = [];
 
             for (let i = 0; i < images.length; i++) {
-                const processed = await applyTemplate(images[i]);
+                const processed = await cropAndApply(images[i]);
                 results.push(processed);
 
                 const pct = Math.round(((i + 1) / images.length) * 100);
@@ -142,27 +150,45 @@
             document.getElementById('downloadArea').style.display = 'block';
         }
 
-        function applyTemplate(file) {
+        function cropAndApply(file) {
             return new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = e => {
                     const img = new Image();
                     img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
+                        // Step 1: Crop to 1:1 square from center
+                        const size = Math.min(img.width, img.height);
+                        const cropX = (img.width - size) / 2;
+                        const cropY = (img.height - size) / 2;
+
+                        // Create canvas for cropped image
+                        const cropCanvas = document.createElement('canvas');
+                        cropCanvas.width = size;
+                        cropCanvas.height = size;
+                        const cropCtx = cropCanvas.getContext('2d');
                         
-                        const scale = Math.min(canvas.width / template.width, canvas.height / template.height);
+                        // Draw cropped center portion
+                        cropCtx.drawImage(img, cropX, cropY, size, size, 0, 0, size, size);
+
+                        // Step 2: Apply template on top
+                        const finalCanvas = document.createElement('canvas');
+                        finalCanvas.width = size;
+                        finalCanvas.height = size;
+                        const finalCtx = finalCanvas.getContext('2d');
+                        
+                        // Draw cropped image
+                        finalCtx.drawImage(cropCanvas, 0, 0);
+                        
+                        // Draw template (scaled to fit)
+                        const scale = size / template.width;
                         const tw = template.width * scale;
                         const th = template.height * scale;
-                        const x = (canvas.width - tw) / 2;
-                        const y = (canvas.height - th) / 2;
-                        ctx.drawImage(template, x, y, tw, th);
+                        const tx = (size - tw) / 2;
+                        const ty = (size - th) / 2;
+                        finalCtx.drawImage(template, tx, ty, tw, th);
 
-                        canvas.toBlob(blob => {
-                            const newFile = new File([blob], 'result_' + file.name.replace(/\.[^/.]+$/, '') + '.png', {type: 'image/png'});
+                        finalCanvas.toBlob(blob => {
+                            const newFile = new File([blob], 'square_' + file.name.replace(/\.[^/.]+$/, '') + '.png', {type: 'image/png'});
                             resolve({file: newFile, url: URL.createObjectURL(blob)});
                         }, 'image/png');
                     };
@@ -180,7 +206,7 @@
             const zip = new JSZip();
             results.forEach(r => zip.file(r.file.name, r.file));
             const content = await zip.generateAsync({type: 'blob'});
-            saveAs(content, 'all_images.zip');
+            saveAs(content, 'all_square_images.zip');
         }
     </script>
 </body>
