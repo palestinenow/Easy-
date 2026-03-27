@@ -20,7 +20,7 @@
             border-radius: 15px;
             padding: 40px;
             text-align: center;
-            max-width: 700px;
+            max-width: 800px;
             width: 100%;
             box-shadow: 0 10px 40px rgba(0,0,0,0.3);
         }
@@ -56,14 +56,43 @@
         .text { margin-top: 10px; font-weight: bold; color: #333; }
         .info { color: #666; margin-top: 20px; font-size: 13px; line-height: 1.6; }
         .badge { background: #667eea; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; display: inline-block; margin: 5px; }
-        .preview { margin: 20px 0; padding: 20px; background: #f5f5f5; border-radius: 10px; display: none; }
-        .preview img { max-width: 200px; border: 1px solid #ddd; }
+        .preview-section { 
+            background: #f9f9f9; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin: 20px 0;
+            display: none;
+        }
+        .preview-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        .preview-box {
+            text-align: center;
+        }
+        .preview-box img { 
+            max-width: 300px; 
+            max-height: 300px;
+            border: 2px solid #ddd; 
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .preview-box p {
+            margin-top: 10px;
+            font-weight: bold;
+            color: #333;
+        }
         .settings { background: #f9f9f9; padding: 20px; border-radius: 10px; margin: 20px 0; text-align: left; }
         .settings label { display: block; margin: 10px 0 5px; font-weight: bold; color: #333; }
         .settings input[type="range"] { width: 100%; }
         .settings .value { color: #667eea; font-weight: bold; }
         .download-area { display: none; margin-top: 20px; }
         .stats { background: #e8f5e9; padding: 15px; border-radius: 8px; margin: 10px 0; }
+        .arrow { font-size: 30px; color: #667eea; }
     </style>
 </head>
 <body>
@@ -73,13 +102,13 @@
         
         <div>
             <span class="badge">✅ Top Right Corner</span>
+            <span class="badge">✅ Live Preview</span>
             <span class="badge">✅ Batch Process</span>
-            <span class="badge">✅ Fast & Easy</span>
         </div>
 
         <!-- Step 1: Upload Logo -->
         <div class="drop" id="logoDrop" onclick="document.getElementById('logoInput').click()">
-            <input type="file" id="logoInput" accept="image/png" onchange="loadLogo(this)">
+            <input type="file" id="logoInput" accept="image/png,image/jpeg" onchange="loadLogo(this)">
             <div class="icon">🎨</div>
             <p><b>Step 1:</b> Upload your logo (PNG with transparency)</p>
             <p id="logoStatus" style="color: #667eea; margin-top: 10px;"></p>
@@ -91,6 +120,23 @@
             <div class="icon">📁</div>
             <p><b>Step 2:</b> Select all images (0-100+ images)</p>
             <p id="imagesStatus" style="color: #667eea; margin-top: 10px;"></p>
+        </div>
+
+        <!-- Live Preview Section -->
+        <div class="preview-section" id="previewSection">
+            <h3 style="margin-bottom: 10px;">👁️ Live Preview</h3>
+            <p style="color: #666; font-size: 14px;">Changes update automatically when you adjust settings</p>
+            <div class="preview-container">
+                <div class="preview-box">
+                    <img id="originalPreview" src="" alt="Original">
+                    <p>Original</p>
+                </div>
+                <div class="arrow">→</div>
+                <div class="preview-box">
+                    <img id="watermarkPreview" src="" alt="With Logo">
+                    <p>With Logo</p>
+                </div>
+            </div>
         </div>
 
         <!-- Settings -->
@@ -117,11 +163,6 @@
             <b>📊 Progress:</b> <span id="processed">0</span> / <span id="total">0</span> images
         </div>
 
-        <div class="preview" id="preview">
-            <p><b>👁️ Preview (first image):</b></p>
-            <img id="previewImg" src="" alt="Preview">
-        </div>
-
         <div class="download-area" id="downloadArea">
             <button class="btn" onclick="downloadZip()">📦 Download All as ZIP</button>
         </div>
@@ -142,10 +183,11 @@
         let results = [];
         let logoSize = 15;
         let padding = 20;
+        let firstImage = null;
 
         function loadLogo(input) {
             const file = input.files[0];
-            if (file && file.type === 'image/png') {
+            if (file) {
                 const reader = new FileReader();
                 reader.onload = e => {
                     logo = new Image();
@@ -154,12 +196,13 @@
                         document.getElementById('logoStatus').textContent = '✓ ' + file.name + ' (' + logo.width + '×' + logo.height + 'px)';
                         document.getElementById('settings').style.display = 'block';
                         checkReady();
+                        if (firstImage) {
+                            updatePreview();
+                        }
                     };
                     logo.src = e.target.result;
                 };
                 reader.readAsDataURL(file);
-            } else {
-                alert('Please upload a PNG file for best results (transparent background)');
             }
         }
 
@@ -170,6 +213,22 @@
                 document.getElementById('imagesStatus').textContent = '✓ ' + images.length + ' images selected';
                 document.getElementById('total').textContent = images.length;
                 document.getElementById('stats').style.display = 'block';
+                
+                // Load first image for preview
+                const reader = new FileReader();
+                reader.onload = e => {
+                    firstImage = new Image();
+                    firstImage.onload = () => {
+                        document.getElementById('originalPreview').src = e.target.result;
+                        document.getElementById('previewSection').style.display = 'block';
+                        if (logo) {
+                            updatePreview();
+                        }
+                    };
+                    firstImage.src = e.target.result;
+                };
+                reader.readAsDataURL(images[0]);
+                
                 checkReady();
             }
         }
@@ -183,23 +242,47 @@
             padding = parseInt(document.getElementById('padding').value);
             document.getElementById('sizeValue').textContent = logoSize + '%';
             document.getElementById('paddingValue').textContent = padding + 'px';
+            
+            // Update preview in real-time
+            if (firstImage && logo) {
+                updatePreview();
+            }
+        }
+
+        function updatePreview() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = firstImage.width;
+            canvas.height = firstImage.height;
+
+            // Draw original image
+            ctx.drawImage(firstImage, 0, 0);
+
+            // Calculate logo size (percentage of image width)
+            const logoWidth = (firstImage.width * logoSize) / 100;
+            const logoHeight = (logo.height * logoWidth) / logo.width;
+
+            // Position in top right corner
+            const x = firstImage.width - logoWidth - padding;
+            const y = padding;
+
+            // Draw logo
+            ctx.drawImage(logo, x, y, logoWidth, logoHeight);
+
+            // Show preview
+            document.getElementById('watermarkPreview').src = canvas.toDataURL('image/png');
         }
 
         async function processImages() {
             document.getElementById('progress').style.display = 'block';
             document.getElementById('downloadArea').style.display = 'none';
-            document.getElementById('preview').style.display = 'none';
             results = [];
 
             for (let i = 0; i < images.length; i++) {
                 try {
                     const processed = await addWatermark(images[i]);
                     results.push(processed);
-
-                    if (i === 0) {
-                        document.getElementById('previewImg').src = processed.url;
-                        document.getElementById('preview').style.display = 'block';
-                    }
 
                     const pct = Math.round(((i + 1) / images.length) * 100);
                     document.getElementById('fill').style.width = pct + '%';
@@ -243,16 +326,14 @@
                         ctx.drawImage(logo, x, y, logoWidth, logoHeight);
 
                         // Export
+                        const ext = file.name.split('.').pop().toLowerCase();
+                        const newName = file.name.replace('.' + ext, '_watermarked.' + (ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png'));
+                        const mimeType = ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png';
+                        
                         canvas.toBlob(blob => {
-                            const ext = file.name.split('.').pop().toLowerCase();
-                            const newName = file.name.replace('.' + ext, '_watermarked.' + (ext === 'jpg' || ext === 'jpeg' ? 'jpg' : 'png'));
-                            const newFile = new File(
-                                [blob], 
-                                newName, 
-                                {type: ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png'}
-                            );
+                            const newFile = new File([blob], newName, {type: mimeType});
                             resolve({file: newFile, url: URL.createObjectURL(blob)});
-                        }, ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : 'image/png', 0.92);
+                        }, mimeType, ext === 'jpg' || ext === 'jpeg' ? 0.92 : undefined);
                     };
                     img.onerror = reject;
                     img.src = e.target.result;
